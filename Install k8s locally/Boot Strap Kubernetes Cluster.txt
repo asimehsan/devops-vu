@@ -1,0 +1,107 @@
+https://github.com/orgs/kubernetes-sigs (all about k8 yamls)
+https://medium.com/@mudasirhaji/a-step-by-step-guide-to-setting-up-a-multi-master-cluster-with-haproxy-on-amazon-linux-2-ami-ec2-baae2e95bb11
+
+Master hostname (master) 2CPU, 2GB, Disk 50G
+worker node1 (worker1)  2CPU, 4GB, Disk 50G
+worker node2 (worker2)  2CPU, 4GB, Disk 50G
+
+Ubuntu 20.04 LTS Server
+
+You must be a root user on all nodes to perform the following tasks:
+$ sudo su -
+
+STEP-1:
+# vim /etc/modules-load.d/containerd.conf
+
+Insert following in file:
+overlay
+br_netfilter
+
+save file and run these command:
+# modprobe overlay
+# modprobe br_netfilter
+
+STEP-2:
+# vim /etc/sysctl.d/kubernetes.conf
+
+Insert following in file:
+
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+
+save file and run this command:
+# sysctl --system
+# sysctl -p
+
+
+STEP-3
+Run following commands to enable docker repository:
+# curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+# add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+Install containerd in all nodes
+# apt update 
+# dpkg --configure -a
+# apt install -y containerd.io
+# rm -f /etc/containerd/config.toml
+# systemctl daemon-reload
+# systemctl start containerd
+# systemctl enable containerd
+# systemctl status containerd
+
+STEP-4
+Add kubernetes repository in all nodes
+# apt-get update && apt-get install -y apt-transport-https ca-certificates curl
+# echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+# curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+STEP-5
+Disable swap:
+# vim /etc/fstab (Remove swap mount point from this file)
+# sed -i '/swap/d' /etc/fstab
+# swapoff -a
+
+
+STEP-6
+Install kubernetes:
+# apt-get update 
+# apt-get install kubelet kubeadm kubectl kubernetes-cni -y (for latest version)
+# apt-mark hold kubelet kubeadm kubectl (Secure the packages for accidental removal)
+OR 
+# export KUBE_VERSION=1.23.0 (use any older version)
+# apt-get install -y kubelet=${KUBE_VERSION}-00 kubeadm=${KUBE_VERSION}-00 kubectl=${KUBE_VERSION}-00 kubernetes-cni=0.8.7-00 (for )
+# apt-mark hold kubelet kubeadm kubectl (Secure the packages for accidental removal)
+
+STEP-7 (Only on master node)
+# systemctl restart containerd.service
+# kubeadm init (Only on master node)
+# kubeadm init --control-plane-endpoint="192.168.159.110:6443" --upload-certs --apiserver-advertise-address=192.168.159.101 --pod-network-cidr=192.168.0.0/16 (Only for multi-master setup)
+# kubeadm token create --print-join-command (To regenrate the tokens)
+NOTE: the multimaster init control plane and api IP will be the IP of Load balancer like HA Proxy. 
+
+STEP-8 (Only on master node)
+# cp /etc/kubernetes/admin.conf /root/
+# chown $(id -u):$(id -g) /root/admin.conf
+# export KUBECONFIG=/root/admin.conf
+# echo 'export KUBECONFIG=/root/admin.conf' >> /root/.bashrc
+
+
+STEP-9 (Only on master node)
+# kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')" 
+OR
+https://github.com/weaveworks/weave/releases
+Download the daemonset yaml file of required version like following link. 
+
+OR
+
+# wget https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
+then 
+# kubectl apply -f weave-daemonset-k8s.yaml
+
+
+Troubleshooting: 
+crictl -r unix:///var/run/containerd/containerd.sock ps/pods
+crictl CONTAINER_RUNTIME_ENDPOINT=unix:///var/run/containerd/containerd.sock 
+
+
