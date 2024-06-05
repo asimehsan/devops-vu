@@ -88,9 +88,16 @@ STEP-8 (Only on master node)
 
 
 STEP-9 (Only on master node)
+For weavenet:
+------------
 # wget https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
-then 
 # kubectl apply -f weave-daemonset-k8s.yaml
+
+For calico:
+----------
+# kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+# kubectl get pods -n kube-system
+
 
 
 Troubleshooting (while getting problem running crictl directly on cluster nodes): 
