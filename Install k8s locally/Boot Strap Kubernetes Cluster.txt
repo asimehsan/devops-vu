@@ -88,20 +88,13 @@ STEP-8 (Only on master node)
 
 
 STEP-9 (Only on master node)
-# kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')" 
-OR
-https://github.com/weaveworks/weave/releases
-Download the daemonset yaml file of required version like following link. 
-
-OR
-
 # wget https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
 then 
 # kubectl apply -f weave-daemonset-k8s.yaml
 
 
-Troubleshooting: 
-crictl -r unix:///var/run/containerd/containerd.sock ps/pods
-crictl CONTAINER_RUNTIME_ENDPOINT=unix:///var/run/containerd/containerd.sock 
+Troubleshooting (while getting problem running crictl directly on cluster nodes): 
+# crictl -r unix:///var/run/containerd/containerd.sock ps/pods
+# crictl CONTAINER_RUNTIME_ENDPOINT=unix:///var/run/containerd/containerd.sock 
 
 
