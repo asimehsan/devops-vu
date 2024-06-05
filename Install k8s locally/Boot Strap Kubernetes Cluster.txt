@@ -97,7 +97,10 @@ For calico:
 ----------
 # kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
 # kubectl get pods -n kube-system
-
+NOTE: Open the calico.yaml file and find the CALICO_IPV4POOL_CIDR environment variable. Update it to your new CIDR range.
+Example CIDR:
+- name: CALICO_IPV4POOL_CIDR
+  value: "20.20.0.0/16"
 
 
 Troubleshooting (while getting problem running crictl directly on cluster nodes): 
