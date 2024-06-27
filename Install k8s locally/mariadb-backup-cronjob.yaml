@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mysql-backup
+  namespace: dev
+spec:
+  schedule: "5 11 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: mysql-backup
+            image: mysql:5.7
+            command: ["/bin/bash", "-c", "/scripts/backup.sh"]
+            volumeMounts:
+            - name: backup-script
+              mountPath: /scripts
+            - name: backup-storage
+              mountPath: /backup
+          restartPolicy: OnFailure
+          volumes:
+          - name: backup-script
+            configMap:
+              name: db-backup
+              defaultMode: 0777
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: nfs-db2-pvc
