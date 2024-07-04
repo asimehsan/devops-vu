@@ -1,0 +1,72 @@
+Generate new ssl key:
+--------------------
+openssl genrsa -out asimehsan.key 2048
+
+Generate new certificate signing request for the issuer authority:
+------------------------------------------------------------------
+#CN is the name of the user
+openssl req -new -key asimehsan.key -out asimehsan.csr -subj "/CN=asimehsan"
+
+OR
+
+#O is the group name. When you will create the rolebinding do the binding based on group name. 
+openssl req -new -key asimehsan.key -out asimehsan.csr -subj "/CN=asimehsan/O=cluster:manager"
+
+
+Create manifest file csr_template.yaml:
+---------------------------------------
+cat <<EOF > csr_template.yaml
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: asimehsan-csr
+spec:
+  request: <Base64_encoded_CSR>
+  signerName: kubernetes.io/kube-apiserver-client
+  usages:
+  - client auth
+EOF
+
+Save the certificate signing request in base64 encoded in variable CSR_CONTENT:
+-------------------------------------------------------------------------------
+CSR_CONTENT=$(cat asimehsan.csr | base64 | tr -d '\n')
+
+Put the encoded certificate signing request in template manifest:
+-----------------------------------------------------------------
+sed "s|<Base64_encoded_CSR>|$CSR_CONTENT|" csr_template.yaml > asimehsan_csr.yaml
+
+Create the csr resource:
+----------------------- 
+kubectl create -f asimehsan_csr.yaml
+kubectl get csr
+
+Do approval as cluster admin user:
+---------------------------------
+kubectl certificate approve asimehsan-csr
+
+Fetch the issued certificate:
+-----------------------------
+kubectl get csr asimehsan-csr -o jsonpath='{.status.certificate}' | base64 --decode > asimehsan.crt
+
+Take a look on current kubeconfig used:
+-------------------------------------
+kubectl config view
+
+Take a look on the ssl certs directory:
+--------------------------------------
+ls /etc/kubernetes/pki/
+
+Generate new kubeconfig file:
+-----------------------------
+# Set Cluster Configuration:
+kubectl config set-cluster kubernetes --server=https://<API-Server-IP>:6443 --certificate-authority=/etc/kubernetes/pki/ca.crt --embed-certs=true --kubeconfig=asimehsan.kubeconfig
+
+# Set Credentials for asimehsan:
+kubectl config set-credentials asimehsan --client-certificate=asimehsan.crt --client-key=asimehsan.key --embed-certs=true --kubeconfig=asimehsan.kubeconfig
+
+# Set asimehsan Context: 
+kubectl config set-context asimehsan-context --cluster=kubernetes --namespace=default --user=asimehsan --kubeconfig=asimehsan.kubeconfig
+
+# Use asimehsan Context:
+kubectl config use-context asimehsan-context --kubeconfig=asimehsan.kubeconfig
+
