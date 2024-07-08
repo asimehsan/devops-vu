@@ -1,3 +1,5 @@
+###################### User creation in Kubernetes ##########################
+
 Generate new ssl key:
 --------------------
 openssl genrsa -out asimehsan.key 2048
@@ -11,7 +13,6 @@ OR
 
 #O is the group name. When you will create the rolebinding do the binding based on group name. 
 openssl req -new -key asimehsan.key -out asimehsan.csr -subj "/CN=asimehsan/O=cluster:manager"
-
 
 Create manifest file csr_template.yaml:
 ---------------------------------------
@@ -69,4 +70,15 @@ kubectl config set-context asimehsan-context --cluster=kubernetes --namespace=de
 
 # Use asimehsan Context:
 kubectl config use-context asimehsan-context --kubeconfig=asimehsan.kubeconfig
+
+
+# Set KUBECONFIG environment variable pointing to asimehsan.kubeconfig
+export KUBECONFIG=<path>/asimehsan.kubeconfig
+
+# Validate the user rights from admin user
+kubectl auth can-i list pods --as system:serviceaccount:dev:user1 -n dev
+kubectl auth can-i list pods --as asimehsan -n dev
+
+# Validate by user directly
+kubectl auth can-i list pods -n dev
 
