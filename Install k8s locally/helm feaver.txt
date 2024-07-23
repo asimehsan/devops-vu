@@ -1,0 +1,109 @@
+Helm Fever: (Do or Die)
+===========
+
+Installation:
+-------------
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+
+Version Check:
+--------------
+kubectl version --short
+
+
+create local chart directory structure and put the manifest in template directory:
+---------------------------------------------------------------------------------
+helm create hero-chart
+
+
+deploy a chart with name app1-chart in Kubernetes:
+-----------------------------------------------
+helm install app1-chart . (. mean the directory where you created the chart structure)
+
+
+deploy a chart in kubernetes:
+---------------------------
+helm install app1-chart .
+
+
+undeploy a chart in kubernetes:
+---------------------------
+helm delete app1-chart .
+
+
+After making mandatory changes in values, your code it ready. You need to package your chart using the below command:
+--------------------------------------------------------------------------------------------------------------------
+helm package app1-chart/ 
+
+
+Add a repo url like prometheus-community:
+----------------------------------------
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+
+To search a charts name prometheus in all installed repo:
+------------------------------------------
+helm search repo prometheus-community
+
+
+To install(deploy) some chart from the above search command:
+----------------------------------------------------------- 
+helm install [RELEASE_NAME] prometheus-community/prometheus
+helm install [RELEASE_NAME] prometheus-community/prometheus -n somenamespace --create-namespace 
+
+
+To upgrade the installed chart with new values:
+-----------------------------------------------
+helm upgrade cilium cilium/cilium --namespace=kube-system --reuse-values --set prometheus.enabled=true --set operator.prometheus.enabled=true
+OR
+helm upgrade -f values.yaml app1-chart app1-chart/ 
+
+
+If you want to save the values file of some chart search before installation:
+----------------------------------------------------------------------------
+helm inspect values grafana/grafana > /tmp/grafana.values
+OR
+helm get values deployed-chart-name
+
+
+Implement the chart with some name using the saved value files:
+-------------------------------------------------------------
+helm install [chart-name] stable/grafana --values /tmp/grafana.values --namespace grafana
+
+
+delete the chart:
+----------------
+helm delete [chart-name] --purge 
+
+
+List down the installed charts in namespace:
+-------------------------------------------
+helm list -n namespace
+
+
+To list down the added repos with name and url:
+----------------------------------------------
+helm repo list
+
+
+Recall the output of chart given at the time of installation:
+------------------------------------------------------------
+helm status ingress-nginx -n ingress-nginx
+
+
+To list all the deployed releases of chart:
+------------------------------------------
+helm history [RELEASE]
+
+
+To rollback to some old version:
+-------------------------------
+helm rollback my-web-app 1
+
+
+To pull the chart from helm repo on local disk:
+-----------------------------------------------
+helm fetch --untar <repo-name>/<chart-name>
+
+ 
