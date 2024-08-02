@@ -1,0 +1,70 @@
+To setup the ICR:
+-----------------
+https://cloud.ibm.com/registry/start
+
+Install COS CSI install and setup storage class and PVC in IKS:
+---------------------------------------------------------------
+https://cloud.ibm.com/docs/containers?topic=containers-storage_cos_install
+
+If this is your first time connecting to an IBM Cloud cluster, see the following full setup directions.
+
+1. Log in to your IBM Cloud account. Include the --sso option if using a federated ID.
+
+install the ibmcloud command:
+-----------------------------
+https://cloud.ibm.com/docs/cli?topic=cli-install-ibmcloud-cli
+
+To login via command line:
+-------------------------
+ibmcloud login -a cloud.ibm.com -r us-south -g Cloud-Dev --sso
+
+After login install the following plugins:
+------------------------------------------
+ibmcloud plugin install container-service
+ibmcloud plugin install container-registry
+
+
+2. Set the Kubernetes context to your cluster for this terminal session. For more information about this command, see the docs.
+
+Fetch the IKS details:
+----------------------
+ibmcloud ks cluster ls
+
+Generate the kuebconfig of cluster:
+-----------------------------------
+ibmcloud ks cluster config --cluster <cluster_name_or_ID>
+
+
+3. Verify that you can connect to your cluster.
+kubectl config current-context
+
+Now, you can run kubectl commands to manage your cluster workloads in IBM Cloud! For a full list of commands, see the Kubernetes deep dive videos on my channel. https://youtube.com/@devops-vu?si=K-6A4SOjPCtxgxxv
+
+Tip: Plan to use multiple clusters? Repeat these steps for each cluster. Then, you can use the kubectl config use-context command to switch your context to a different cluster.
+
+Some commands that can make your life easy:
+------------------------------------------
+
+kubectl get cm -n kube-system cluster-info -o yaml | grep etcd_host
+
+ibmcloud ks worker ls --cluster <cluster_name_or_ID>
+
+To find the hostname of an ALB in a VPC cluster, run ibmcloud ks ingress alb ls. Private hostnames are only listed if private ALBs are enabled.
+
+ibmcloud ks ingress alb ls
+
+How to add new workers in cluster:
+-----------------------------------
+
+Get the name of the worker pool that you want to resize.
+
+ibmcloud ks worker-pool ls --cluster CLUSTER-NAME
+
+Resize the worker pool by designating the number of worker nodes that you want to deploy in each zone.
+
+ibmcloud ks worker-pool resize --cluster CLUSTER-NAME --worker-pool <pool_name>  --size-per-zone <number_of_workers_per_zone>
+
+Verify that the worker pool is resized.
+
+ibmcloud ks worker ls --cluster CLUSTER-NAME --worker-pool <pool_name>
+
