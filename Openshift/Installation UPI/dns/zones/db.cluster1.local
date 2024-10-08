@@ -1,0 +1,38 @@
+$TTL    604800
+@       IN      SOA     haproxy.cluster1.local. contact.cluster1.local (
+                  1     ; Serial
+             604800     ; Refresh
+              86400     ; Retry
+            2419200     ; Expire
+             604800     ; Minimum
+)
+        IN      NS      haproxy
+
+haproxy.cluster1.local.          IN      A       10.10.10.1
+
+; Control Plane Nodes
+cp-1.devopsvu.cluster1.local.         IN      A      10.10.10.201
+cp-2.devopsvu.cluster1.local.         IN      A      10.10.10.202
+cp-3.devopsvu.cluster1.local.         IN      A      10.10.10.203
+
+; Worker Nodes
+w-1.devopsvu.cluster1.local.        IN      A      10.10.10.211
+w-2.devopsvu.cluster1.local.        IN      A      10.10.10.212
+
+; OpenShift Internal - Load balancer
+api.devopsvu.cluster1.local.        IN    A    10.10.10.1
+api-int.devopsvu.cluster1.local.    IN    A    10.10.10.1
+*.apps.devopsvu.cluster1.local.     IN    A    10.10.10.1
+
+; ETCD Cluster
+etcd-0.devopsvu.cluster1.local.    IN    A     10.10.10.201
+etcd-1.devopsvu.cluster1.local.    IN    A     10.10.10.202
+etcd-2.devopsvu.cluster1.local.    IN    A     10.10.10.203
+
+; OpenShift Internal SRV records (cluster name = devopsvu)
+_etcd-server-ssl._tcp.devopsvu.cluster1.local.    86400     IN    SRV     0    10    2380    etcd-0.devopsvu
+_etcd-server-ssl._tcp.devopsvu.cluster1.local.    86400     IN    SRV     0    10    2380    etcd-1.devopsvu
+_etcd-server-ssl._tcp.devopsvu.cluster1.local.    86400     IN    SRV     0    10    2380    etcd-2.devopsvu
+
+oauth-openshift.apps.devopsvu.cluster1.local.     IN     A     10.10.10.1
+console-openshift-console.apps.devopsvu.cluster1.local.     IN     A     10.10.10.1

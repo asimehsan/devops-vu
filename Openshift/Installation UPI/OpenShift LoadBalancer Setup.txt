@@ -1,0 +1,143 @@
+OpenShift Installation on-prem using UPI Online Method
+======================================================
+
+HW Specs:
+---------
+haproxy 1GB RAM, 20GB Disk, 1 CPU, 2 NIC
+master1 24GB RAM, 150GB Disk, 4 CPU and 1 NIC
+master2 24GB RAM, 150GB Disk, 4 CPU and 1 NIC
+master3 24GB RAM, 150GB Disk, 4 CPU and 1 NIC
+worker1 32GB RAM, 200GB Disk, 4 CPU and 1 NIC
+worker2 32GB RAM, 200GB Disk, 4 CPU and 1 NIC
+
+
+For VM's on ESXi configure disk.EnableUUID:
+------------------------------------------
+Open the Host Client, and log in to the ESXi.
+After power-off the VM's, right-click the virtual machine, and choose Edit Settings.
+Click VM Options tab, and select Advanced.
+Click Edit Configuration in Configuration Parameters.
+Click Add parameter.
+In the Key column, type disk.EnableUUID.
+In the Value column, type TRUE.
+Click OK and click Save.
+Power on the virtual machine
+
+
+redhat developer account login with 60 days trial:
+-------------------------------------------------
+https://console.redhat.com/openshift
+
+
+OpenShift Admin, sshkey Share, Router, Loadbalancer, DHCP and DNS Setup:
+
+1. Install RHEL/CentOS 9
+------------------------
+
+2. Disable firewalld and selinux
+--------------------------------
+
+3. NAT for internet 
+--------------------
+dnf install nftables
+systemctl enable nftables
+systemctl start nftables
+iptables -t nat -A POSTROUTING -o ens224 -j MASQUERADE
+iptables -t nat -L -v -n
+iptables -t nat -F
+
+vim /etc/sysctl.conf
+net.ipv4.ip_forward = 0
+
+
+4. Install and configure BIND DNS:
+----------------------------------
+
+dnf install bind bind-utils -y
+
+Apply configuration files
+
+cp dns/named.conf /etc/named.conf
+cp -R dns/zones /etc/named/
+
+Enable and start the service
+
+systemctl enable named
+systemctl start named
+systemctl status named
+
+At the moment DNS will still be pointing to the LAN DNS server. You can see this by testing with dig cluster1.local.
+
+Change the LAN nic (ens192) to use 127.0.0.1 for DNS AND ensure Ignore automatically Obtained DNS parameters is ticked
+
+Restart Network Manager
+
+systemctl restart NetworkManager
+
+Confirm dig now sees the correct DNS results by using the DNS Server running locally
+
+dig cluster1.local
+# The following should return the answer ocp-bootstrap.lab.ocp.lan from the local server
+dig -x 10.10.10.1
+
+5. Install & configure DHCP:
+----------------------------
+
+Install the DHCP Server
+
+dnf install dhcp-server -y
+
+Edit dhcpd.conf from the cloned git repo to have the correct mac address for each host and copy the conf file to the correct location for the DHCP service to use
+
+cp dhcpd.conf /etc/dhcp/dhcpd.conf
+
+Enable and start the service
+
+systemctl enable dhcpd
+systemctl start dhcpd
+systemctl status dhcpd
+
+6. Install & configure HAProxy:
+------------------------------
+
+dnf install haproxy -y
+
+Copy HAProxy config
+
+cp haproxy.cfg /etc/haproxy/haproxy.cfg
+
+Enable and start the service
+
+systemctl enable haproxy
+systemctl start haproxy
+systemctl status haproxy
+
+
+
+
+7. Install NFS Server:
+----------------------
+
+Install and configure NFS for the OpenShift Registry. It is a requirement to provide storage for the Registry, emptyDir can be specified if necessary.
+
+dnf install nfs-utils -y
+
+Create the Share
+
+Check available disk space and its location df -h
+
+mkdir -p /shares/registry
+chown -R nobody:nobody /shares/registry
+chmod -R 777 /shares/registry
+
+Export the Share
+
+echo "/shares/registry  192.168.22.0/24(rw,sync,root_squash,no_subtree_check,no_wdelay)" > /etc/exports
+exportfs -rv
+
+Enable and start the NFS related services
+
+systemctl enable nfs-server rpcbind
+systemctl start nfs-server rpcbind nfs-mountd
+
+
