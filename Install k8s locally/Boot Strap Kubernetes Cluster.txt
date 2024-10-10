@@ -75,10 +75,17 @@ OR
 
 STEP-7 (Only on master node)
 # systemctl restart containerd.service
-# kubeadm init (Only on master node)
-# kubeadm init --control-plane-endpoint="192.168.159.110:6443" --upload-certs --apiserver-advertise-address=192.168.159.101 --pod-network-cidr=192.168.0.0/16 (Only for multi-master setup)
-# kubeadm token create --print-join-command (To regenrate the tokens)
+(Only for single master node setup)
+# kubeadm init 
+(Only for multi-master setup)
+# kubeadm init --control-plane-endpoint "your-haproxy-ip:6443" --upload-certs --pod-network-cidr=10.244.0.0/16
+OR
+# kubeadm init --control-plane-endpoint="your-haproxy-ip:6443" --upload-certs --apiserver-advertise-address=your-haproxy-ip --pod-network-cidr=192.168.0.0/16 
 NOTE: the multimaster init control plane and api IP will be the IP of Load balancer like HA Proxy. 
+(To regenerate the tokens to join worker nodes)
+# kubeadm token create --print-join-command 
+(To regenerate the tokens to join masters nodes)
+# kubeadm token create --print-join-command --certificate-key $(kubeadm init phase upload-certs --upload-certs)
 
 STEP-8 (Only on master node)
 # cp /etc/kubernetes/admin.conf /root/
@@ -88,12 +95,15 @@ STEP-8 (Only on master node)
 
 
 STEP-9 (Only on master node)
-For weavenet:
-------------
+
+For weavenet CNI:
+----------------
 # wget https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
+then 
 # kubectl apply -f weave-daemonset-k8s.yaml
 
-For calico:
+
+For calico CNI:
 ----------
 # kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
 # kubectl get pods -n kube-system
@@ -102,9 +112,8 @@ Example CIDR:
 - name: CALICO_IPV4POOL_CIDR
   value: "20.20.0.0/16"
 
-
-Troubleshooting (while getting problem running crictl directly on cluster nodes): 
-# crictl -r unix:///var/run/containerd/containerd.sock ps/pods
-# crictl CONTAINER_RUNTIME_ENDPOINT=unix:///var/run/containerd/containerd.sock 
+Troubleshooting: 
+crictl -r unix:///var/run/containerd/containerd.sock ps/pods
+crictl CONTAINER_RUNTIME_ENDPOINT=unix:///var/run/containerd/containerd.sock 
 
 
