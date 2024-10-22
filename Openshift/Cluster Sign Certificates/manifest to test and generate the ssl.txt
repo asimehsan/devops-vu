@@ -1,0 +1,94 @@
+sign ssl certificate from cluster ca
+------------------------------------
+
+# Create a service with ssl annotation
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-https-service
+  annotations:
+    service.beta.openshift.io/serving-cert-secret-name: tls-secret
+spec:
+  selector:
+    app: https-server      # This must match the label in the pod
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: 8443
+
+# annotate an existing service
+
+oc annotate service service-name service.beta.openshift.io/serving-cert-secret-name=tls-secret
+
+
+# pod that will use the signed ssl
+apiVersion: v1
+kind: Pod
+metadata:
+  name: https-server-pod
+  labels:
+    app: https-server       # Label must match the service's selector
+spec:
+  containers:
+  - name: https-server
+    image: nginx
+    ports:
+    - containerPort: 8443
+    volumeMounts:
+    - name: tls-secret
+      mountPath: /etc/ssl/certs
+      readOnly: true
+    args:
+    - /bin/bash
+    - -c
+    - |
+      echo 'server {
+          listen 8443 ssl;
+          ssl_certificate /etc/ssl/certs/tls.crt;
+          ssl_certificate_key /etc/ssl/certs/tls.key;
+          ssl_verify_client optional_no_ca;
+          location / {
+            root /usr/share/nginx/html;
+          }
+        }' > /etc/nginx/conf.d/default.conf
+      nginx -g 'daemon off;'
+  volumes:
+  - name: tls-secret
+    secret:
+      secretName: tls-secret
+
+
+# Create a configmap to save the ca 
+
+oc create configmap ca-bundle
+oc annotate configmap ca-bundle service.beta.openshift.io/inject-cabundle=true
+
+
+# create a pod that will use the ca configmap
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ca-pod
+  labels:
+    app: ca-pod       # Label must match the service's selector
+spec:
+  containers:
+  - name: ca-pod
+    image: nginx
+    ports:
+    - containerPort: 8443
+    volumeMounts:
+    - name: service-ca
+      mountPath: /tmp
+      readOnly: true
+  volumes:
+  - name: service-ca
+    configMap:
+      name: ca-bundle    # Use the OpenShift Service CA ConfigMap
+
+We can also use the openshift-service-ca.crt config map by default created in all projects
+
+
+# From ca-pod verify the certificate based url
+curl -I -v --cacert /tmp/service-ca.crt https://my-https-service.default.svc.cluster.local
