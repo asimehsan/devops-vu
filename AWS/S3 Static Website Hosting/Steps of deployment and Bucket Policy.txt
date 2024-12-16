@@ -1,0 +1,35 @@
+Host a static website on AWS S3:
+===============================
+Create S3 bucket
+Enable public access
+Enable static website hosting
+Enable bucket policy to allow all to read content
+Test the webpage access using the url provided by Static website hosting
+Import or create certificate in AWS certificate manager
+Create AWS cloudfront
+Create cloudfront security origion-access-id 
+Define cloudfront origion-access-id in bucker policy 
+
+S3 Bucket Policy:
+================
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowForAllRO",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::awsdemo.itpspro.com/*"
+        },
+        {
+            "Sid": "Allow_CloudFront",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E1EX59UH8L0S93"
+            },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::awsdemo.itpspro.com/*"
+        }
+    ]
+}
