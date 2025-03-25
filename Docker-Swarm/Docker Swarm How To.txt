@@ -1,0 +1,278 @@
+Docker Swarm How to?
+====================
+++++++++++++++++++++
+====================
+
+1. Swarm Setup and Initialization
+Command							Description
+docker swarm init --advertise-addr <MANAGER_IP>		Initialize a Swarm and make the current node a Manager.
+docker swarm join-token worker				Display the command and token to join a Worker node to the Swarm.
+docker swarm join-token manager				Display the command and token to join a Manager node to the Swarm.
+docker swarm join --token <TOKEN> <MANAGER_IP>		Join a node (Worker or Manager) to the Swarm using the provided token.
+docker swarm leave --force				Force a node to leave the Swarm (use --force for Manager nodes).
+
+2. Node Management
+Command							Description
+docker node ls						List all nodes in the Swarm.
+docker node inspect <NODE_ID>				Display detailed information about a specific node.
+docker node promote <NODE_ID>				Promote a Worker node to a Manager node.
+docker node demote <NODE_ID>				Demote a Manager node to a Worker node.
+docker node update --availability drain <NODE_ID>	Drain a node (stop tasks and prevent new tasks from being scheduled).
+docker node update --availability pause <NODE_ID>	Set a node to pause (prevent new tasks from being scheduled).
+docker node update --availability active <NODE_ID>	Set a node back to active (allow tasks to be scheduled).
+docker node rm <NODE_ID>				Remove a node from the Swarm (node must be in down state).
+
+3. Service Management
+Command							Description
+docker service create --name <SERVICE_NAME> <IMAGE>	Create a new service.
+docker service create --name SERVICE-NAME --network NETWORK-NAME --replicas 3 IMAGE-NAME
+docker service create --config source=test-config,target=/etc/asim.config --name SERVICE-NAME IMAGE-NAME
+docker service create --name SERVICE-NAME --secret source=SECRET-NAME,target=/run/secrets/SECRET-NAME IMAGE-NAME
+docker service update --network-add NETWORK-NAME SERVICE-NAME1
+docker service ls					List all services in the Swarm.
+docker service ps <SERVICE_NAME>			List tasks for a specific service.
+docker service inspect <SERVICE_NAME>			Display detailed information about a service.
+docker service inspect <SERVICE_NAME> --pretty
+docker service scale <SERVICE_NAME>=<REPLICAS>		Scale a service to the specified number of replicas.
+docker service update <SERVICE_NAME>			Update a service (e.g., change image, replicas, or environment variables).
+docker service logs <SERVICE_NAME>			View logs for a service.
+docker service rm <SERVICE_NAME>			Remove a service from the Swarm.
+
+4. Stack Management (Docker Compose in Swarm)
+Command							Description
+docker stack deploy -c <COMPOSE_FILE> <STACK_NAME>	Deploy a stack (group of services) using a Docker Compose file.
+docker stack ls						List all stacks in the Swarm.
+docker stack ps <STACK_NAME>				List tasks for a specific stack.
+docker stack services <STACK_NAME>			List services in a specific stack.
+docker stack rm <STACK_NAME>				Remove a stack and all its services.
+
+5. Network Management
+Command							Description
+docker network create --driver overlay <NETWORK_NAME>	Create an overlay network for Swarm services.
+docker network ls					List all networks.
+docker network inspect <NETWORK_NAME>			Display detailed information about a network.
+docker network rm <NETWORK_NAME>			Remove a network.
+
+6. Secret Management
+Command						Description
+docker secret create <SECRET_NAME> <FILE>	Create a secret from a file.
+docker secret ls				List all secrets.
+docker secret inspect <SECRET_NAME>		Display detailed information about a secret.
+docker secret rm <SECRET_NAME>			Remove a secret.
+
+7. Config Management
+Command						Description
+docker config create <CONFIG_NAME> <FILE>	Create a config from a file.
+docker config ls				List all configs.
+docker config inspect <CONFIG_NAME>		Display detailed information about a config.
+docker config rm <CONFIG_NAME>			Remove a config.
+
+8. Swarm Maintenance and Troubleshooting
+Command							Description
+docker swarm ca --rotate				Rotate the Swarm root CA certificate.
+docker swarm update --autolock				Enable autolock for the Swarm (requires a key to restart Managers).
+docker swarm unlock					Unlock a Swarm using the autolock key.
+docker system prune --volumes				Clean up unused data (e.g., stopped containers, unused networks, volumes).
+docker node update --label-add <KEY>=<VALUE> <NODE_ID>	Add a label to a node.
+docker node update --label-rm <KEY> <NODE_ID>		Remove a label from a node.
+
+9. Advanced Commands
+Command							Description
+docker service rollback <SERVICE_NAME>			Roll back a service to its previous version.
+docker service update --rollback <SERVICE_NAME>		Roll back a service immediately.
+docker service update --force <SERVICE_NAME>		Force a service update (useful for restarting tasks).
+docker service update --image <IMAGE> <SERVICE_NAME>	Update the image used by a service.
+
+10. Monitoring and Debugging
+Command						Description
+docker stats					Display live resource usage statistics for containers.
+docker events					View real-time events from the Docker daemon.
+docker service logs --follow <SERVICE_NAME>	Stream logs for a service in real-time.
+docker node ps <NODE_ID>			List tasks running on a specific node.
+Summary
+These commands cover the entire lifecycle of managing a Docker Swarm cluster, from setup and deployment to maintenance and troubleshooting. Here’s a quick cheat sheet for the most common tasks:
+
+Initialize Swarm: docker swarm init --advertise-addr <MANAGER_IP>
+
+Join Swarm: docker swarm join --token <TOKEN> <MANAGER_IP>
+
+List Nodes: docker node ls
+
+Create Service: docker service create --name <SERVICE_NAME> <IMAGE>
+
+Scale Service: docker service scale <SERVICE_NAME>=<REPLICAS>
+
+Deploy Stack: docker stack deploy -c <COMPOSE_FILE> <STACK_NAME>
+
+View Logs: docker service logs <SERVICE_NAME>
+
+Remove Service: docker service rm <SERVICE_NAME>
+
+By mastering these commands, you can effectively manage and administrate a Docker Swarm cluster for your containerized applications.
+
+Ports Used for Swarm Management:
+===============================
+These ports are used for communication between Manager and Worker nodes in the Swarm cluster.
+Port	Protocol	Description
+2377	TCP		Used for Swarm management and control plane communication.
+			- Manager nodes listen on this port for incoming connections from other nodes.
+			- Used for cluster state management, leader election, and Raft consensus.
+7946	TCP/UDP		Used for control plane gossip protocol.
+			- Enables nodes to discover and communicate with each other.
+			- Used for node membership and health checks.
+4789	UDP		Used for overlay network traffic (VXLAN).
+
+Responsibilities of a Manager Node:
+===================================
+Orchestration: Manages the deployment and scaling of services.
+
+Scheduling: Decides which worker nodes will run which tasks (containers).
+
+Cluster State Management: Maintains the state of the Swarm, including service definitions, network configurations, and secrets.
+
+Raft Consensus: Manager nodes use the Raft consensus algorithm to ensure consistency and high availability.
+
+Leader Election: Among the Manager nodes, one is elected as the Leader to handle all orchestration and scheduling decisions.
+
+Leader Node (Specific to Manager Nodes):
+========================================
+The Leader is the primary Manager node responsible for making all orchestration and scheduling decisions.
+
+If the Leader fails, another Manager node is automatically elected as the new Leader.
+
+The Leader ensures that the Swarm's state is consistent across all Manager nodes.
+
+Docker Stack:
+=============
+services:
+  # Nginx Web Server
+  web:
+    image: nginx:latest
+    configs:
+      - source: app-config
+        target: /etc/nginx/some-app.conf
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "80:80"
+    networks:
+      - my_network
+
+  # MariaDB Database Server
+  db:
+    image: mariadb:10.6
+    environment:
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: admin
+      MYSQL_PASSWORD_FILE: /run/secrets/admindbpass
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/dbpass
+    secrets:
+      - dbpassword
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2048M
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - my_network
+
+secrets:
+  dbpassword:
+    external: true  # Existing Secret
+  admindbpass:
+    external: true  # Existing Secret
+
+
+configs:
+  app-config:
+    external: true
+
+# Networks
+networks:
+  my_network:
+    driver: overlay
+
+# Volumes
+volumes:
+  db_data:
+    driver: local
+
+
+Docker stack to setup containers on all nodes:
+==============================================
+
+services:
+  # Service to run on all nodes
+  global_service:
+    image: nginx:latest  # Replace with your desired image
+    deploy:
+      mode: global  # Ensures one instance per node
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "80:80"  # Expose port 80 on the host
+    networks:
+      - my_network
+
+# Networks
+networks:
+  my_network:
+    driver: overlay
+
+Label a node and schedule the container based on label:
+======================================================
+
+docker node update --label-add role=web NODE-NAME
+
+docker node inspect NODE-NAME --pretty
+
+services:
+  web:
+    image: nginx:latest
+    deploy:
+      replicas: 2
+      placement:
+        constraints:
+          - node.labels.role == web  # Schedule only on nodes with the label role=web
+    ports:
+      - "80:80"
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: overlay
+
+
+Place containers on manager/worker nodes:
+========================================
+
+services:
+  manager_service:
+    image: nginx:latest  # Replace with your desired image
+    deploy:
+      replicas: 2  # Number of replicas (adjust based on the number of manager nodes)
+      placement:
+        constraints:
+          - node.role == manager  # Schedule only on manager nodes
+    ports:
+      - "80:80"  # Expose port 80 on the host
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: overlay
